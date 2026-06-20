@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
+  baseURL: "https://bloom-backend-3ipd.onrender.com/api",
   headers: { "Content-Type": "application/json" },
 });
 
@@ -72,9 +72,9 @@ export const adminApi = {
   deleteVendor: (key: string, id: string) =>
     api.delete(`/admin/vendors/${id}`, { headers: { "X-Admin-Key": key } }),
   exportVendors: (key: string) =>
-    `${import.meta.env.VITE_API_URL || "/api"}/admin/export/vendors?admin_key=${key}`,
+    `https://bloom-backend-3ipd.onrender.com/admin/export/vendors?admin_key=${key}`,
   exportBudgetPlans: (key: string) =>
-    `${import.meta.env.VITE_API_URL || "/api"}/admin/export/budget-plans?admin_key=${key}`,
+    `https://bloom-backend-3ipd.onrender.com/admin/export/budget-plans?admin_key=${key}`,
   health: (key: string) =>
     api.get("/admin/health", { headers: { "X-Admin-Key": key } }),
 };
