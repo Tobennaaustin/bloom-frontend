@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://bloom-backend-3ipd.onrender.com/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
   headers: { "Content-Type": "application/json" },
 });
 
@@ -52,10 +52,10 @@ export const dashboardApi = {
 
 // ── Budget Planner ────────────────────────────────────────────────────────────
 export const budgetApi = {
-  createPlan: (
-    budget: number,
-    items: { name: string; unitPrice: number; quantity: number }[],
-  ) => api.post("/budget/plan", { budget, items }),
+  createPlan: (budget: number, items: string[]) =>
+    api.post("/budget/plan", { budget, items }),
+  priceLookup: (products: string[]) =>
+    api.post("/budget/price-lookup", { products }),
   getHistory: () => api.get("/budget/history"),
 };
 
@@ -72,11 +72,25 @@ export const adminApi = {
   deleteVendor: (key: string, id: string) =>
     api.delete(`/admin/vendors/${id}`, { headers: { "X-Admin-Key": key } }),
   exportVendors: (key: string) =>
-    `https://bloom-backend-3ipd.onrender.com/admin/export/vendors?admin_key=${key}`,
+    api.get("/admin/export/vendors", {
+      headers: { "X-Admin-Key": key },
+      responseType: "blob",
+    }),
   exportBudgetPlans: (key: string) =>
-    `https://bloom-backend-3ipd.onrender.com/admin/export/budget-plans?admin_key=${key}`,
+    api.get("/admin/export/budget-plans", {
+      headers: { "X-Admin-Key": key },
+      responseType: "blob",
+    }),
   health: (key: string) =>
     api.get("/admin/health", { headers: { "X-Admin-Key": key } }),
+  getSeasonal: (key: string) =>
+    api.get("/admin/seasonal", { headers: { "X-Admin-Key": key } }),
+  setSeasonal: (key: string, period: string, season: string) =>
+    api.put(
+      "/admin/seasonal",
+      { period, season },
+      { headers: { "X-Admin-Key": key } },
+    ),
 };
 
 export default api;

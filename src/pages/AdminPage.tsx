@@ -14,6 +14,7 @@ import {
   Database,
   AlertTriangle,
   Store,
+  Sparkles,
 } from "lucide-react";
 import {
   Card,
@@ -264,11 +265,38 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "vendors">(
     "overview",
   );
+  const [seasonal, setSeasonal] = useState<{
+    period: string;
+    season: string;
+    detectedPeriod: string;
+    detectedSeason: string;
+  } | null>(null);
+  const [seasonalSaving, setSeasonalSaving] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (key: string) => {
-    sessionStorage.setItem("bloom_admin_key", key);
-    setAdminKey(key);
+  const loadSeasonal = () => {
+    if (!adminKey) return;
+    adminApi
+      .getSeasonal(adminKey)
+      .then((r) =>
+        setSeasonal({
+          period: r.data.currentSetting.period,
+          season: r.data.currentSetting.season,
+          detectedPeriod: r.data.detected.periodLabel,
+          detectedSeason: r.data.detected.seasonLabel,
+        }),
+      )
+      .catch(() => {});
+  };
+
+  const saveSeasonal = (period: string, season: string) => {
+    if (!adminKey) return;
+    setSeasonalSaving(true);
+    adminApi
+      .setSeasonal(adminKey, period, season)
+      .then(() => loadSeasonal())
+      .catch(() => {})
+      .finally(() => setSeasonalSaving(false));
   };
 
   const loadStats = () => {
@@ -294,10 +322,45 @@ export default function AdminPage() {
       .finally(() => setLoading(false));
   };
 
+  const handleLogin = (key: string) => {
+    sessionStorage.setItem("bloom_admin_key", key);
+    setAdminKey(key);
+  };
+
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  const downloadCsv = async (which: "vendors" | "budget") => {
+    if (!adminKey) return;
+    setExporting(which);
+    try {
+      const res =
+        which === "vendors"
+          ? await adminApi.exportVendors(adminKey)
+          : await adminApi.exportBudgetPlans(adminKey);
+      const blob = new Blob([res.data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        which === "vendors" ? "bloom-vendors.csv" : "bloom-budget-plans.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert(
+        "Export failed. The backend may be waking up (free tier sleeps after inactivity). Wait 30 seconds and try again.",
+      );
+    } finally {
+      setExporting(null);
+    }
+  };
+
   useEffect(() => {
     if (adminKey) {
       loadStats();
       loadVendors();
+      loadSeasonal();
     }
   }, [adminKey, page, filterType]);
 
@@ -484,26 +547,110 @@ export default function AdminPage() {
                     </Card>
                   )}
 
+                  {/* Seasonal demand control */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-500" />
+                        <CardTitle>Seasonal Demand Control</CardTitle>
+                      </div>
+                      {seasonal && (
+                        <p className="text-xs text-slate-400 mt-1">
+                          Auto-detected now:{" "}
+                          <strong className="text-slate-600">
+                            {seasonal.detectedSeason}
+                          </strong>{" "}
+                          +{" "}
+                          <strong className="text-slate-600">
+                            {seasonal.detectedPeriod}
+                          </strong>
+                        </p>
+                      )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-sm text-slate-500">
+                        The system detects the season and academic period from
+                        today's date. You can override them here for a demo or a
+                        special period.
+                      </p>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1.5">
+                            Academic Period
+                          </label>
+                          <select
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-amber-500 transition-all cursor-pointer"
+                            value={seasonal?.period ?? "auto"}
+                            onChange={(e) =>
+                              saveSeasonal(
+                                e.target.value,
+                                seasonal?.season ?? "auto",
+                              )
+                            }
+                            disabled={seasonalSaving}>
+                            <option value="auto">Auto (by date)</option>
+                            <option value="resumption">Resumption</option>
+                            <option value="midsemester">Mid-semester</option>
+                            <option value="exam">Exam / Test</option>
+                            <option value="closing">Closing / Vacation</option>
+                            <option value="summer">Summer / Resit</option>
+                            <option value="normal">Normal Lectures</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1.5">
+                            Weather Season
+                          </label>
+                          <select
+                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-amber-500 transition-all cursor-pointer"
+                            value={seasonal?.season ?? "auto"}
+                            onChange={(e) =>
+                              saveSeasonal(
+                                seasonal?.period ?? "auto",
+                                e.target.value,
+                              )
+                            }
+                            disabled={seasonalSaving}>
+                            <option value="auto">Auto (by date)</option>
+                            <option value="rainy">Rainy Season</option>
+                            <option value="harmattan">Harmattan / Dry</option>
+                          </select>
+                        </div>
+                      </div>
+                      {seasonalSaving && (
+                        <p className="text-xs text-amber-600">Saving...</p>
+                      )}
+                    </CardContent>
+                  </Card>
+
                   {/* Export section */}
                   <Card>
                     <CardHeader>
                       <CardTitle>Export Data</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-3">
-                      <a
-                        href={adminApi.exportVendors(adminKey)}
-                        download
+                      <button
+                        onClick={() => downloadCsv("vendors")}
+                        disabled={exporting === "vendors"}
                         className="inline-flex items-center gap-2 bg-green-600 text-white text-sm font-semibold
-                        px-5 py-3 rounded-xl hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20">
-                        <Download className="w-4 h-4" /> Export Vendors CSV
-                      </a>
-                      <a
-                        href={adminApi.exportBudgetPlans(adminKey)}
-                        download
+                        px-5 py-3 rounded-xl hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20
+                        disabled:opacity-60 disabled:cursor-not-allowed">
+                        <Download className="w-4 h-4" />
+                        {exporting === "vendors"
+                          ? "Preparing..."
+                          : "Export Vendors CSV"}
+                      </button>
+                      <button
+                        onClick={() => downloadCsv("budget")}
+                        disabled={exporting === "budget"}
                         className="inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold
-                        px-5 py-3 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20">
-                        <Download className="w-4 h-4" /> Export Budget Plans CSV
-                      </a>
+                        px-5 py-3 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20
+                        disabled:opacity-60 disabled:cursor-not-allowed">
+                        <Download className="w-4 h-4" />
+                        {exporting === "budget"
+                          ? "Preparing..."
+                          : "Export Budget Plans CSV"}
+                      </button>
                     </CardContent>
                   </Card>
 

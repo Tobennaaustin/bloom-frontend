@@ -50,6 +50,21 @@ export interface GapItem {
   recommendation: string;
 }
 
+export interface SeasonalBanner {
+  active: boolean;
+  headline: string;
+  message: string;
+  products: string[];
+  season?: string;
+  period?: string;
+}
+
+export interface SeasonalAdd {
+  product: string;
+  reason: string;
+  trigger: string;
+}
+
 export interface DashboardData {
   storeType: string;
   demandScore: number;
@@ -61,17 +76,27 @@ export interface DashboardData {
   addThese: string[];
   reduce: string[];
   gapAnalysis: GapItem[];
+  seasonalBanner?: SeasonalBanner;
+  seasonalAdd?: SeasonalAdd[];
+  seasonalContext?: {
+    seasonLabel: string;
+    periodLabel: string;
+    monthName: string;
+  };
 }
 
 export interface BudgetItem {
   name: string;
   unitPrice: number;
-  quantity: number;
-  totalCost: number;
+  unit: string;
+  priceRange: string;
+  priceSource: string;
   demandScore: number;
   purchaseRatePct: number;
   priorityScore: number;
   isMustStock: boolean;
+  recommendedQty: number;
+  totalCost: number;
   buyQty?: number;
   subtotal?: number;
   buyFull?: boolean;

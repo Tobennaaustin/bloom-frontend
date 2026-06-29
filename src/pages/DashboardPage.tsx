@@ -17,6 +17,8 @@ import {
   ArrowRight,
   AlertTriangle,
   Info,
+  Sparkles,
+  CloudRain,
 } from "lucide-react";
 import {
   Card,
@@ -149,6 +151,36 @@ export default function DashboardPage() {
             icon={<Package className="w-5 h-5" />}
           />
         </div>
+
+        {data.seasonalBanner?.active && (
+          <div className="flex items-start gap-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5">
+            <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-semibold text-amber-800">
+                  {data.seasonalBanner.headline}
+                </p>
+                <CloudRain className="w-3.5 h-3.5 text-amber-500" />
+              </div>
+              <p className="text-sm text-amber-700 leading-relaxed">
+                {data.seasonalBanner.message}
+              </p>
+              {data.seasonalBanner.products.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {data.seasonalBanner.products.map((prod, i) => (
+                    <span
+                      key={i}
+                      className="bg-white text-amber-700 border border-amber-300 text-xs font-semibold px-2.5 py-1 rounded-full">
+                      {prod}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-2xl p-5">
           <div className="w-9 h-9 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
