@@ -88,15 +88,12 @@ export interface DashboardData {
 export interface BudgetItem {
   name: string;
   unitPrice: number;
-  unit: string;
-  priceRange: string;
-  priceSource: string;
+  quantity: number;
+  totalCost: number;
   demandScore: number;
   purchaseRatePct: number;
   priorityScore: number;
   isMustStock: boolean;
-  recommendedQty: number;
-  totalCost: number;
   buyQty?: number;
   subtotal?: number;
   buyFull?: boolean;

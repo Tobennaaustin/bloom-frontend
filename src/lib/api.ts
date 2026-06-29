@@ -52,10 +52,10 @@ export const dashboardApi = {
 
 // ── Budget Planner ────────────────────────────────────────────────────────────
 export const budgetApi = {
-  createPlan: (budget: number, items: string[]) =>
-    api.post("/budget/plan", { budget, items }),
-  priceLookup: (products: string[]) =>
-    api.post("/budget/price-lookup", { products }),
+  createPlan: (
+    budget: number,
+    items: { name: string; unitPrice: number; quantity: number }[],
+  ) => api.post("/budget/plan", { budget, items }),
   getHistory: () => api.get("/budget/history"),
 };
 
